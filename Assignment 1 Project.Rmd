@@ -1,0 +1,199 @@
+---
+title: "Project 1 RR"
+author: "Shadrack Badia"
+date: "4/26/2021"
+output: html_document
+---
+
+
+```{r}
+# create a temporary file on the local disk
+tempf <- tempfile()
+# download data to the temporary file
+download.file( "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip" , tempf , mode = 'wb' )
+
+# unzip the contents 
+data <- unzip( tempf , exdir = tempdir() )
+
+data1 <- read.csv(data, sep = ",",header = TRUE)
+
+
+```
+
+
+
+
+```{r}
+library(ggplot2)
+library(dplyr)
+library(lattice)
+```
+
+
+```{r}
+#Looking at the strings and how data is composed
+str(data1)
+```
+
+
+
+```{r}
+#Looking at a summary of Numerical data Variables
+summary(data1)
+```
+
+
+
+
+
+####QUESTION 1
+
+
+###1.Calculate the total number of steps taken per day
+
+
+```{r}
+stepsperday<-aggregate(steps~date, data1, sum)
+```
+
+
+### 2.f you do not understand the difference between a histogram and a barplot, research the difference between them. Make a histogram of the total number of steps taken each day
+
+```{r}
+hist(stepsperday$steps, xlab="Group by Total Number of Steps per day", ylab="Number of Days", main="Total Number of Steps taken each day")
+```
+
+
+The MEAN
+
+```{r}
+meanstp<-mean(stepsperday$steps)
+meanstp
+```
+
+3.The Median
+
+```{r}
+medianStp<-median(stepsperday$steps)
+medianStp
+```
+
+
+4.Time series plot of the average number of steps taken
+
+```{r}
+#the average daily activity pattern?
+avgdaily<-aggregate(steps ~ interval, data1, mean)
+```
+
+
+```{r}
+with(avgdaily, plot(interval, steps, type = "l"))
+```
+
+5.The 5-minute interval that, on average, contains the maximum number of steps
+Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
+
+
+
+```{r}
+avgdaily[which.max(avgdaily[,2]),1]
+```
+
+6.Code to describe and show a strategy for imputing missing data
+
+Calculate Missing Values
+```{r}
+#Misssing data
+vis_miss(data1)
+```
+
+
+```{r}
+gg_miss_var(data1) + labs(y = "Look at all the missing ones")
+```
+
+```{r}
+#total number of missing variables are all 0 values
+n_distinct(data1$steps)
+```
+
+
+```{r}
+miss_case_table(data1)
+```
+
+13.1% representing 2304 consist of all missing valiies of the dataset
+
+###Filling missing values
+
+Filling the values using the mean of the steps mean is x
+
+```{r}
+x <- mean(stepsperday$steps)/365
+x
+```
+```{r}
+data2<-data1
+data2[missingIndex,1]<-x
+head(data2)
+```
+
+Finding the total number of steps each day after missing values are imputed and making histogram:
+
+```{r}
+newstepsperday<-aggregate(steps~date, data2, sum)
+hist(newstepsperday$steps, xlab="Group by Total Number of Steps per day", ylab="Number of Days", main="Number of Steps taken each day after missing values are imputed")
+```
+
+```{r}
+newmean <- mean(newstepsperday$steps)
+newmean
+```
+
+```{r}
+newmedian <- median(newstepsperday$steps)
+newmedian
+```
+### Are there differences in activity patterns between weekdays and weekends?
+For this part the \color{red}{\verb|weekdays()|}weekdays() function may be of some help here. Use the dataset with the filled-in missing values for this part.
+
+Create a new factor variable in the dataset with two levels – “weekday” and “weekend” indicating whether a given date is a weekday or weekend day.
+
+```{r}
+data2$date<-as.Date(data2$date)
+```
+
+
+8.Panel plot comparing the average number of steps taken per 5-minute interval across weekdays and weekends
+
+```{r}
+data3<-data2%>%
+        mutate(dayType= ifelse(weekdays(data2$date)=="Saturday" | weekdays(data2$date)=="Sunday", "Weekend", "Weekday"))
+head(data3)
+```
+
+
+Make a panel plot containing a time series plot (i.e. \color{red}{\verb|type = "l"|}type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis). See the README file in the GitHub repository to see an example of what this plot should look like using simulated data.
+
+```{r}
+#Let z represent the Average Step By  Day Type And Interval
+z<-data3 %>%
+  group_by(dayType, interval) %>%
+  summarize(averageStepByDay=sum(steps))
+
+head(z)
+```
+
+```{r}
+with(z, 
+      xyplot(averageStepByDay ~ interval | dayType, 
+      type = "l",      
+      main = "The Total Number of Steps within Intervals by dayType",
+      xlab = "Daily Intervals",
+      ylab = "Average Number of Steps"))
+```
+
+
+
+
